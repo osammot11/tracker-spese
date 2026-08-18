@@ -45,6 +45,18 @@ class TrackerTest extends TestCase
         $this->assertTrue(session('pin_verified', false));
     }
 
+    public function test_custom_pin_from_env_config(): void
+    {
+        config(['app.pin' => '7890']);
+
+        $wrong = $this->post('/pin', ['pin' => '1234']);
+        $wrong->assertSessionHasErrors(['pin']);
+
+        $correct = $this->post('/pin', ['pin' => '7890']);
+        $correct->assertRedirect(route('dashboard'));
+        $this->assertTrue(session('pin_verified', false));
+    }
+
     public function test_dashboard_page_loads_with_pin(): void
     {
         $response = $this->withSession(['pin_verified' => true])->get('/');

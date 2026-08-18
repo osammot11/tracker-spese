@@ -24,9 +24,10 @@ class PinController extends Controller
             'pin.digits' => 'Il PIN deve essere esattamente di 4 cifre numeriche.',
         ]);
 
-        $correctPin = (string) env('APP_PIN', '1234');
+        $inputPin = trim((string) $request->input('pin'));
+        $correctPin = trim((string) config('app.pin', env('APP_PIN', '1234')));
 
-        if ((string) $request->input('pin') === $correctPin) {
+        if (hash_equals($correctPin, $inputPin)) {
             session(['pin_verified' => true]);
             $intended = session()->pull('url.intended', route('dashboard'));
 

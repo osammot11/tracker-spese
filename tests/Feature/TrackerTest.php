@@ -207,4 +207,71 @@ class TrackerTest extends TestCase
         $response->assertRedirect(route('pin.show'));
         $this->assertFalse(session('pin_verified', false));
     }
+
+    public function test_openapi_schema_is_public(): void
+    {
+        $response = $this->get('/api/v1/openapi.json');
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'openapi',
+            'info',
+            'paths',
+            'components' => [
+                'securitySchemes'
+            ]
+        ]);
+    }
+
+    public function test_ai_api_requires_api_key(): void
+    {
+        $unauth = $this->getJson('/api/v1/overview');
+        $unauth->assertStatus(401);
+        $unauth->assertJson(['success' => false]);
+    }
+
+    public function test_ai_api_overview_with_valid_key(): void
+    {
+        $key = config('app.api_key');
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $key,
+        ])->getJson('/api/v1/overview');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'period',
+            'totals' => [
+                'total_income',
+                'total_expense',
+                'net_balance',
+                'savings_rate_percent'
+            ],
+            'expenses_by_category',
+            'incomes_by_category'
+        ]);
+    }
+
+    public function test_ai_api_create_transaction_with_smart_category(): void
+    {
+        $key = config('app.api_key');
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $key,
+        ])->postJson('/api/v1/transactions', [
+            'type' => 'expense',
+            'amount' => 18.50,
+            'category_name' => 'Ristoranti',
+            'description' => 'Pizza margherita e bibita',
+            'payment_method' => 'Carta di Debito',
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJson([
+            'success' => true,
+        ]);
+
+        $this->assertDatabaseHas('transactions', [
+            'description' => 'Pizza margherita e bibita',
+            'amount' => 18.50,
+        ]);
+    }
 }
+

@@ -67,6 +67,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | ChatGPT / External API Secret Key
+    |--------------------------------------------------------------------------
+    |
+    | Secret key for ChatGPT Custom GPT Actions to query and modify tracker data.
+    |
+    */
+
+    'api_key' => env('CHATGPT_API_KEY', 'tracker-secret-key-change-me'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

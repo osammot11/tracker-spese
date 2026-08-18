@@ -1,12 +1,30 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AiApiController;
+use App\Http\Controllers\Api\V1\OpenApiController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PinController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Middleware\EnsurePinVerified;
+use App\Http\Middleware\EnsureValidApiKey;
 use Illuminate\Support\Facades\Route;
+
+// Public OpenAPI Schema for ChatGPT Custom GPT Actions
+Route::get('/api/v1/openapi.json', [OpenApiController::class, 'schema'])->name('openapi.schema');
+
+// ChatGPT & External AI REST API v1 (Protected with Bearer / API Key)
+Route::prefix('api/v1')->middleware([EnsureValidApiKey::class])->group(function () {
+    Route::get('/overview', [AiApiController::class, 'overview'])->name('api.v1.overview');
+    Route::get('/transactions', [AiApiController::class, 'listTransactions'])->name('api.v1.transactions.list');
+    Route::post('/transactions', [AiApiController::class, 'createTransaction'])->name('api.v1.transactions.create');
+    Route::delete('/transactions/{transaction}', [AiApiController::class, 'deleteTransaction'])->name('api.v1.transactions.delete');
+
+    Route::get('/categories', [AiApiController::class, 'listCategories'])->name('api.v1.categories.list');
+    Route::post('/categories', [AiApiController::class, 'createCategory'])->name('api.v1.categories.create');
+    Route::post('/categories/{category}/subcategories', [AiApiController::class, 'createSubcategory'])->name('api.v1.categories.subcategories.create');
+});
 
 // PIN Authentication Routes (Public)
 Route::get('/pin', [PinController::class, 'show'])->name('pin.show');

@@ -12,7 +12,7 @@ class OpenApiController extends Controller
         $serverUrl = url("/");
 
         $schema = [
-            "openapi" => "3.0.1",
+            "openapi" => "3.1.0",
             "info" => [
                 "title" => "Tracker Spese Personali API",
                 "description" => "API per gestire e interrogare spese, entrate, bilanci e categorie del tracker personale.",
@@ -357,10 +357,10 @@ class OpenApiController extends Controller
                             "type" => ["type" => "string", "enum" => ["expense", "income"]],
                             "amount" => ["type" => "number"],
                             "date" => ["type" => "string"],
-                            "category" => ["type" => "string", "nullable" => true],
-                            "subcategory" => ["type" => "string", "nullable" => true],
-                            "description" => ["type" => "string", "nullable" => true],
-                            "payment_method" => ["type" => "string", "nullable" => true],
+                            "category" => ["type" => "string"],
+                            "subcategory" => ["type" => "string"],
+                            "description" => ["type" => "string"],
+                            "payment_method" => ["type" => "string"],
                         ],
                     ],
                     "CategoryItem" => [

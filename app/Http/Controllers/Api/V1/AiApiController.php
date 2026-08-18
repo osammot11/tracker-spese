@@ -195,10 +195,28 @@ class AiApiController extends Controller
             }
         }
 
-        // Fallback default category if not found
+        // Fallback default category or auto-creation if not found
         if (!$categoryId) {
-            $defaultCat = Category::whereIn('type', [$type, 'both'])->first();
-            $categoryId = $defaultCat ? $defaultCat->id : 1;
+            if (!empty($validated['category_name'])) {
+                $newCat = Category::create([
+                    'name' => trim($validated['category_name']),
+                    'type' => $type,
+                    'icon' => '📁',
+                    'color' => $type === 'income' ? '#10b981' : '#f43f5e',
+                ]);
+                $categoryId = $newCat->id;
+            } else {
+                $defaultCat = Category::whereIn('type', [$type, 'both'])->first();
+                if (!$defaultCat) {
+                    $defaultCat = Category::create([
+                        'name' => $type === 'income' ? 'Entrate Varie' : 'Spese Varie',
+                        'type' => $type,
+                        'icon' => '📁',
+                        'color' => '#6366f1',
+                    ]);
+                }
+                $categoryId = $defaultCat->id;
+            }
         }
 
         $date = !empty($validated['date']) ? $validated['date'] : Carbon::now()->format('Y-m-d');

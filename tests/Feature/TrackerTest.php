@@ -18,9 +18,36 @@ class TrackerTest extends TestCase
         $this->seed();
     }
 
-    public function test_dashboard_page_loads_successfully(): void
+    public function test_unauthorized_user_is_redirected_to_pin(): void
     {
         $response = $this->get('/');
+        $response->assertRedirect(route('pin.show'));
+    }
+
+    public function test_pin_page_loads_successfully(): void
+    {
+        $response = $this->get('/pin');
+        $response->assertStatus(200);
+        $response->assertSee('Accesso Protetto');
+    }
+
+    public function test_wrong_pin_fails(): void
+    {
+        $response = $this->post('/pin', ['pin' => '9999']);
+        $response->assertSessionHasErrors(['pin']);
+        $this->assertFalse(session('pin_verified', false));
+    }
+
+    public function test_correct_pin_authenticates_user(): void
+    {
+        $response = $this->post('/pin', ['pin' => '1234']);
+        $response->assertRedirect(route('dashboard'));
+        $this->assertTrue(session('pin_verified', false));
+    }
+
+    public function test_dashboard_page_loads_with_pin(): void
+    {
+        $response = $this->withSession(['pin_verified' => true])->get('/');
         $response->assertStatus(200);
         $response->assertSee('Dashboard Finanze');
         $response->assertSee('Entrate del Mese');
@@ -29,14 +56,14 @@ class TrackerTest extends TestCase
 
     public function test_transactions_page_loads_successfully(): void
     {
-        $response = $this->get('/transactions');
+        $response = $this->withSession(['pin_verified' => true])->get('/transactions');
         $response->assertStatus(200);
         $response->assertSee('Gestione Transazioni');
     }
 
     public function test_api_transactions_list(): void
     {
-        $response = $this->getJson('/api/transactions');
+        $response = $this->withSession(['pin_verified' => true])->getJson('/api/transactions');
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'transactions' => [
@@ -69,7 +96,7 @@ class TrackerTest extends TestCase
             'notes' => 'Note di test'
         ];
 
-        $response = $this->postJson('/api/transactions', $payload);
+        $response = $this->withSession(['pin_verified' => true])->postJson('/api/transactions', $payload);
         $response->assertStatus(201);
         $response->assertJson([
             'success' => true
@@ -85,7 +112,7 @@ class TrackerTest extends TestCase
     {
         $transaction = Transaction::first();
 
-        $response = $this->putJson('/api/transactions/' . $transaction->id, [
+        $response = $this->withSession(['pin_verified' => true])->putJson('/api/transactions/' . $transaction->id, [
             'type' => $transaction->type,
             'category_id' => $transaction->category_id,
             'subcategory_id' => $transaction->subcategory_id,
@@ -111,7 +138,7 @@ class TrackerTest extends TestCase
     {
         $transaction = Transaction::first();
 
-        $response = $this->deleteJson('/api/transactions/' . $transaction->id);
+        $response = $this->withSession(['pin_verified' => true])->deleteJson('/api/transactions/' . $transaction->id);
         $response->assertStatus(200);
         $response->assertJson([
             'success' => true
@@ -124,12 +151,12 @@ class TrackerTest extends TestCase
 
     public function test_categories_management(): void
     {
-        $response = $this->get('/categories');
+        $response = $this->withSession(['pin_verified' => true])->get('/categories');
         $response->assertStatus(200);
         $response->assertSee('Categorie');
 
         // API create category
-        $catResponse = $this->postJson('/api/categories', [
+        $catResponse = $this->withSession(['pin_verified' => true])->postJson('/api/categories', [
             'name' => 'Nuova Categoria Test',
             'type' => 'expense',
             'icon' => '⭐',
@@ -139,7 +166,7 @@ class TrackerTest extends TestCase
         $newCatId = $catResponse->json('category.id');
 
         // API create subcategory
-        $subResponse = $this->postJson('/api/categories/' . $newCatId . '/subcategories', [
+        $subResponse = $this->withSession(['pin_verified' => true])->postJson('/api/categories/' . $newCatId . '/subcategories', [
             'name' => 'Nuova SottoTest'
         ]);
         $subResponse->assertStatus(201);
@@ -152,13 +179,20 @@ class TrackerTest extends TestCase
 
     public function test_reports_page_and_export(): void
     {
-        $response = $this->get('/reports?year=2026');
+        $response = $this->withSession(['pin_verified' => true])->get('/reports?year=2026');
         $response->assertStatus(200);
         $response->assertSee('Analisi Annuale');
 
         // Test CSV export
-        $csvResponse = $this->get('/reports/export-csv?year=2026');
+        $csvResponse = $this->withSession(['pin_verified' => true])->get('/reports/export-csv?year=2026');
         $csvResponse->assertStatus(200);
         $csvResponse->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_logout_locks_session(): void
+    {
+        $response = $this->withSession(['pin_verified' => true])->get('/logout');
+        $response->assertRedirect(route('pin.show'));
+        $this->assertFalse(session('pin_verified', false));
     }
 }

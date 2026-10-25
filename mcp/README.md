@@ -1,64 +1,61 @@
 # Server MCP del Tracker Spese
 
-Il comando `php artisan mcp:serve` espone 12 strumenti MCP tramite **stdio**. Usa il database e la configurazione Laravel del tracker, quindi non serve avviare `php artisan serve` e non serve copiare la chiave `CHATGPT_API_KEY` in ChatGPT.
+Il tracker espone un endpoint **MCP Streamable HTTP** direttamente dal sito Laravel. ChatGPT lo raggiunge tramite l'URL HTTPS della VPS: non richiede OpenAI Platform, chiavi API OpenAI, tunnel o processi aggiuntivi. Il server usa i modelli e il database del tracker.
 
-## Strumenti
+## Attivazione sulla VPS
+
+1. Verifica che il sito usi HTTPS e che la VPS abbia già ricevuto l'ultima versione del codice.
+2. Genera un token casuale sul server:
+
+   ```sh
+   php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+   ```
+
+3. Aggiungi il valore ottenuto nel `.env` **della VPS**:
+
+   ```dotenv
+   MCP_ACCESS_TOKEN=IL_TOKEN_CASUALE_DA_64_CARATTERI
+   MCP_ALLOWED_ORIGINS=https://chatgpt.com
+   ```
+
+   Conserva questo token come una password: chi conosce l'URL completo può leggere e modificare i dati del tracker. Non commetterlo in Git, non condividerlo in chat e limita o oscura la registrazione del percorso `/mcp/` nei log del web server.
+
+4. Ricarica la configurazione Laravel:
+
+   ```sh
+   php artisan optimize:clear
+   php artisan config:cache
+   ```
+
+5. L'URL da inserire in ChatGPT è:
+
+   ```text
+   https://TUO-DOMINIO/mcp/IL_TOKEN_CASUALE_DA_64_CARATTERI
+   ```
+
+   Il token non appare nella documentazione o nella risposta del server. Un URL errato restituisce 404.
+
+## Collegamento a ChatGPT
+
+Apri [ChatGPT Plugins](https://chatgpt.com/plugins), scegli **Add custom MCP server**, seleziona **Server URL** e incolla l'URL HTTPS completo. Scegli **No authentication**: l'URL casuale è la credenziale del server. Crea e installa il plugin privato. In una nuova chat, selezionalo con `@` e prova una lettura: “Mostrami le categorie del Tracker Spese”.
+
+ChatGPT supporta [server MCP personalizzati tramite Streamable HTTP](https://developers.openai.com/api/docs/guides/custom-mcp-server). L'endpoint restituisce JSON-RPC e non usa la vecchia API REST `/api/v1`.
+
+## Strumenti disponibili
 
 | Lettura | Scrittura |
 | --- | --- |
 | `get_monthly_overview`, `get_annual_report` | `create_transaction`, `update_transaction`, `delete_transaction` |
 | `list_transactions`, `list_categories` | `create_category`, `update_category`, `delete_category`, `create_subcategory`, `delete_subcategory` |
 
-Gli importi sono in euro; le date sono `YYYY-MM-DD`. Prima di scrivere una transazione, usa `list_categories` per ottenere `category_id`. Prima di modificare o eliminare una transazione, usa `list_transactions` per verificare l'ID. `delete_category` elimina anche le transazioni della categoria per effetto della cascata del database; richiede `confirm_delete: true`.
+Gli importi sono in euro e le date sono `YYYY-MM-DD`. Prima di creare una transazione usa `list_categories` per ottenere `category_id`. Prima di modificare o eliminare una transazione usa `list_transactions` per verificare l'ID. `delete_category` elimina anche le transazioni della categoria per effetto della cascata del database e richiede `confirm_delete: true`.
 
 ## Verifica locale
 
-Dal progetto:
+I test non modificano i dati personali:
 
 ```sh
-php artisan migrate --force
-php artisan test tests/Feature/TrackerMcpTest.php
-printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | ./mcp/start.sh
+php artisan test tests/Feature/TrackerMcpTest.php tests/Feature/TrackerMcpHttpTest.php
 ```
 
-L'ultima riga restituisce due risposte JSON-RPC; la seconda contiene i 12 strumenti. I test usano un database temporaneo e non cambiano i dati personali.
-
-## Collegamento a ChatGPT tramite Secure MCP Tunnel
-
-Il tracker conserva dati personali su questo computer. Il percorso consigliato è [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels): ChatGPT raggiunge il processo locale senza pubblicare il database o aprire una porta Internet in ingresso.
-
-1. In [Platform tunnel settings](https://platform.openai.com/settings/organization/tunnels), crea un tunnel e associalo all'organizzazione Platform **e** allo spazio ChatGPT dove vuoi usare il tracker. Servono i permessi Tunnels Read + Manage per crearlo e Tunnels Read + Use per eseguirlo.
-2. Installa `tunnel-client` seguendo la [guida ufficiale](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels). Conserva la sua chiave runtime fuori dal repository e dalla cronologia della shell. Avvia la configurazione con `tunnel-client help quickstart`.
-3. Configura un profilo stdio, sostituendo il percorso e l'ID con quelli reali:
-
-   ```sh
-   tunnel-client init --sample sample_mcp_stdio_local \
-     --profile tracker-spese \
-     --tunnel-id tunnel_ID_REALE \
-     --mcp-command '/percorso/assoluto/tracker-spese/mcp/start.sh'
-   tunnel-client doctor --profile tracker-spese --explain
-   tunnel-client run --profile tracker-spese
-   ```
-
-   Il percorso può contenere spazi. Prima di `init`, imposta `CONTROL_PLANE_API_KEY` nell'ambiente del terminale in modo riservato, come indicato dalla guida ufficiale. Tieni attivi il computer e `tunnel-client run` quando vuoi usare gli strumenti.
-4. In [ChatGPT Plugins](https://chatgpt.com/plugins), scegli **Add custom MCP server**, **Connection: Tunnel**, seleziona il tunnel e configura **No authentication** per il server locale (l'accesso al tunnel è controllato dall'associazione e dalla chiave runtime). Crea e installa il plugin privato.
-5. Apri una nuova chat, seleziona il plugin con `@`, poi prova una lettura: “Mostrami le categorie del Tracker Spese”. Verifica gli argomenti prima delle azioni di scrittura.
-
-Se il tunnel non compare, controlla associazione dello spazio ChatGPT, permessi Tunnels Read + Use e stato di `tunnel-client doctor`.
-
-## Client MCP locali
-
-Un client che supporta MCP stdio può eseguire direttamente `mcp/start.sh` come comando. Specifica sempre il **percorso assoluto** dello script, ad esempio:
-
-```json
-{
-  "mcpServers": {
-    "tracker-spese": {
-      "command": "/percorso/assoluto/tracker-spese/mcp/start.sh",
-      "args": []
-    }
-  }
-}
-```
-
-Il server stdio va avviato solo da client MCP locali fidati: non ha una propria autenticazione di rete. Non esporlo tramite proxy HTTP anonimo.
+Il comando `php artisan mcp:serve` e lo script `mcp/start.sh` restano disponibili per client MCP **locali** che usano stdio; ChatGPT sulla VPS usa l'endpoint HTTPS sopra.

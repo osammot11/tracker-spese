@@ -4,12 +4,18 @@ use App\Http\Controllers\Api\V1\AiApiController;
 use App\Http\Controllers\Api\V1\OpenApiController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\McpController;
 use App\Http\Controllers\PinController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Middleware\EnsurePinVerified;
 use App\Http\Middleware\EnsureValidApiKey;
 use Illuminate\Support\Facades\Route;
+
+// Direct Streamable HTTP MCP endpoint for ChatGPT. The secret path is configured in .env.
+Route::match(['get', 'post', 'delete'], '/mcp/{token}', [McpController::class, 'handle'])
+    ->where('token', '[A-Za-z0-9_-]+')
+    ->name('mcp.handle');
 
 // Public OpenAPI Schema for ChatGPT Custom GPT Actions
 Route::get('/api/v1/openapi.json', [OpenApiController::class, 'schema'])->name('openapi.schema');

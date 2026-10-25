@@ -76,6 +76,10 @@ return [
 
     'api_key' => env('CHATGPT_API_KEY', 'tracker-secret-key-change-me'),
 
+    // Direct MCP endpoint. Generate 32 random bytes as 64 hex characters on the server.
+    'mcp_access_token' => env('MCP_ACCESS_TOKEN', ''),
+    'mcp_allowed_origins' => env('MCP_ALLOWED_ORIGINS', 'https://chatgpt.com'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

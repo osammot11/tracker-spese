@@ -36,6 +36,11 @@ class TrackerMcpHttpTest extends TestCase
 
         $list = $this->callMcp('tools/list');
         $list->assertOk()->assertJsonCount(12, 'result.tools');
+        $tools = json_decode($list->getContent())->result->tools;
+        foreach ($tools as $tool) {
+            $this->assertSame('object', $tool->inputSchema->type);
+            $this->assertIsObject($tool->inputSchema->properties);
+        }
 
         $call = $this->callMcp('tools/call', ['name' => 'list_categories', 'arguments' => []]);
         $call->assertOk()->assertJsonPath('result.structuredContent.categories.0.name', 'Alimentari');

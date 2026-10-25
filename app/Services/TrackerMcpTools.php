@@ -19,7 +19,7 @@ class TrackerMcpTools
             'description' => $description,
             'inputSchema' => [
                 'type' => 'object',
-                'properties' => $properties,
+                'properties' => (object) $properties,
                 'required' => $required,
                 'additionalProperties' => false,
             ],
@@ -137,7 +137,7 @@ class TrackerMcpTools
         if (!$definition) {
             throw new \InvalidArgumentException("Strumento sconosciuto: {$name}");
         }
-        $unknown = array_diff(array_keys($input), array_keys($definition['inputSchema']['properties']));
+        $unknown = array_diff(array_keys($input), array_keys((array) $definition['inputSchema']['properties']));
         if ($unknown) {
             throw ValidationException::withMessages(['arguments' => ['Parametri sconosciuti: '.implode(', ', $unknown)]]);
         }

@@ -70,3 +70,7 @@ Per eseguire la suite di test completa:
 php artisan test
 ```
 
+## 💬 Controllo tramite ChatGPT e MCP
+
+Il progetto include un server MCP locale per leggere report e gestire transazioni, categorie e sottocategorie tramite chat. Per strumenti, verifica e collegamento a ChatGPT con Secure MCP Tunnel, vedi [mcp/README.md](mcp/README.md).
+

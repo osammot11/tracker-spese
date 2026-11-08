@@ -57,6 +57,7 @@ class TrackerMcpHttpTest extends TestCase
 
         $this->withHeaders(['Origin' => 'https://evil.example'])->postJson('/mcp/'.$this->token, $body)->assertForbidden();
         $this->withHeaders(['Origin' => 'https://chatgpt.com'])->postJson('/mcp/'.$this->token, $body)->assertOk();
+        $this->withHeaders(['Origin' => 'https://claude.ai'])->postJson('/mcp/'.$this->token, $body)->assertOk();
     }
 
     public function test_notifications_and_get_follow_streamable_http_contract(): void
@@ -64,6 +65,26 @@ class TrackerMcpHttpTest extends TestCase
         $this->withHeaders(['Accept' => 'text/event-stream'])->get('/mcp/'.$this->token)->assertStatus(405);
         $this->postJson('/mcp/'.$this->token, ['jsonrpc' => '2.0', 'method' => 'notifications/initialized'])->assertStatus(202);
         $this->withHeaders(['MCP-Protocol-Version' => 'invalid'])->postJson('/mcp/'.$this->token, ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'ping'])->assertBadRequest();
+    }
+
+    public function test_supported_protocol_versions_negotiate_with_claude_origin(): void
+    {
+        foreach (['2025-03-26', '2025-06-18', '2025-11-25'] as $version) {
+            $this->withHeaders([
+                'Origin' => 'https://claude.ai',
+                'Accept' => 'application/json, text/event-stream',
+                'MCP-Protocol-Version' => $version,
+            ])->postJson('/mcp/'.$this->token, [
+                'jsonrpc' => '2.0',
+                'id' => 1,
+                'method' => 'initialize',
+                'params' => [
+                    'protocolVersion' => $version,
+                    'capabilities' => [],
+                    'clientInfo' => ['name' => 'Anthropic', 'version' => '1.0.0'],
+                ],
+            ])->assertOk()->assertJsonPath('result.protocolVersion', $version);
+        }
     }
 
     public function test_write_tool_persists_a_transaction(): void

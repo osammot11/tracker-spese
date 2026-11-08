@@ -20,7 +20,10 @@ class McpController extends Controller
 
         // Reject browser-originated requests from unrelated sites.
         $origin = $request->header('Origin');
-        $allowed = array_filter(array_map('trim', explode(',', (string) config('app.mcp_allowed_origins'))));
+        $allowed = array_unique(array_merge(
+            ['https://chatgpt.com', 'https://claude.ai'],
+            array_filter(array_map('trim', explode(',', (string) config('app.mcp_allowed_origins'))))
+        ));
         if ($origin !== null && !in_array($origin, $allowed, true)) {
             abort(403);
         }

@@ -1,6 +1,6 @@
 # Server MCP del Tracker Spese
 
-Il tracker espone un endpoint **MCP Streamable HTTP** direttamente dal sito Laravel. ChatGPT lo raggiunge tramite l'URL HTTPS della VPS: non richiede OpenAI Platform, chiavi API OpenAI, tunnel o processi aggiuntivi. Il server usa i modelli e il database del tracker.
+Il tracker espone un endpoint **MCP Streamable HTTP** direttamente dal sito Laravel. ChatGPT e Claude lo raggiungono tramite l'URL HTTPS della VPS. Il server usa i modelli e il database del tracker, senza processi aggiuntivi.
 
 ## Attivazione sulla VPS
 
@@ -15,7 +15,7 @@ Il tracker espone un endpoint **MCP Streamable HTTP** direttamente dal sito Lara
 
    ```dotenv
    MCP_ACCESS_TOKEN=IL_TOKEN_CASUALE_DA_64_CARATTERI
-   MCP_ALLOWED_ORIGINS=https://chatgpt.com
+   MCP_ALLOWED_ORIGINS=https://chatgpt.com,https://claude.ai
    ```
 
    Conserva questo token come una password: chi conosce l'URL completo può leggere e modificare i dati del tracker. Non commetterlo in Git, non condividerlo in chat e limita o oscura la registrazione del percorso `/mcp/` nei log del web server.
@@ -27,7 +27,7 @@ Il tracker espone un endpoint **MCP Streamable HTTP** direttamente dal sito Lara
    php artisan config:cache
    ```
 
-5. L'URL da inserire in ChatGPT è:
+5. L'URL da inserire in ChatGPT e Claude è:
 
    ```text
    https://TUO-DOMINIO/mcp/IL_TOKEN_CASUALE_DA_64_CARATTERI
@@ -40,6 +40,14 @@ Il tracker espone un endpoint **MCP Streamable HTTP** direttamente dal sito Lara
 Apri [ChatGPT Plugins](https://chatgpt.com/plugins), scegli **Add custom MCP server**, seleziona **Server URL** e incolla l'URL HTTPS completo. Scegli **No authentication**: l'URL casuale è la credenziale del server. Crea e installa il plugin privato. In una nuova chat, selezionalo con `@` e prova una lettura: “Mostrami le categorie del Tracker Spese”.
 
 ChatGPT supporta [server MCP personalizzati tramite Streamable HTTP](https://developers.openai.com/api/docs/guides/custom-mcp-server). L'endpoint restituisce JSON-RPC e non usa la vecchia API REST `/api/v1`.
+
+## Collegamento a Claude
+
+Per un account Free, Pro, Max o Ultra, apri [Customize > Connectors](https://claude.ai/customize/connectors), scegli **Add custom connector** e inserisci il nome “Tracker Spese” e lo stesso URL HTTPS completo usato per ChatGPT. Scegli **No sign-in**; non configurare OAuth o request headers. Aggiungi il connettore, poi abilitalo nella conversazione tramite **+ > Connectors** e prova una lettura, ad esempio “Mostrami le categorie del Tracker Spese”.
+
+Nei piani Team ed Enterprise, un Owner aggiunge il connettore in [Organization settings > Connectors](https://claude.ai/admin-settings/connectors); i membri lo abilitano dal proprio account. Claude raggiunge l'endpoint dalla propria infrastruttura, quindi il dominio deve essere raggiungibile pubblicamente via HTTPS. Consulta la [guida ufficiale ai connettori personalizzati](https://claude.com/docs/connectors/custom/add-unlisted).
+
+**Sicurezza:** con **No sign-in**, il token nel percorso dell'URL è la credenziale. Non condividere l'URL completo e oscura `/mcp/…` nei log di accesso. Questa configurazione è per un tracker personale; per dare accesso a più utenti con permessi separati occorre aggiungere OAuth. I request headers di Claude sono [disponibili solo in beta per alcune organizzazioni](https://claude.com/docs/connectors/custom/add-unlisted#authenticate-with-request-headers), quindi non sono richiesti qui.
 
 ## Strumenti disponibili
 
@@ -58,4 +66,4 @@ I test non modificano i dati personali:
 php artisan test tests/Feature/TrackerMcpTest.php tests/Feature/TrackerMcpHttpTest.php
 ```
 
-Il comando `php artisan mcp:serve` e lo script `mcp/start.sh` restano disponibili per client MCP **locali** che usano stdio; ChatGPT sulla VPS usa l'endpoint HTTPS sopra.
+Il comando `php artisan mcp:serve` e lo script `mcp/start.sh` restano disponibili per client MCP **locali** che usano stdio; ChatGPT e Claude usano l'endpoint HTTPS sopra.

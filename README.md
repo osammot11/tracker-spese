@@ -70,7 +70,7 @@ Per eseguire la suite di test completa:
 php artisan test
 ```
 
-## 💬 Controllo tramite ChatGPT e MCP
+## 💬 Controllo tramite ChatGPT, Claude e MCP
 
-Il progetto include un server MCP HTTPS per leggere report e gestire transazioni, categorie e sottocategorie tramite ChatGPT. Per attivarlo sulla VPS e collegarlo tramite URL, vedi [mcp/README.md](mcp/README.md).
+Il progetto include un server MCP HTTPS per leggere report e gestire transazioni, categorie e sottocategorie tramite ChatGPT e Claude. Per attivarlo sulla VPS e collegarlo tramite URL, vedi [mcp/README.md](mcp/README.md).
 
